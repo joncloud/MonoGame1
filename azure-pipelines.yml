@@ -47,7 +47,7 @@ steps:
 
 - task: ArchiveFiles@2
   inputs:
-    rootFolderOrFile: '$(Build.SourcesDirectory)/**/Windows/x86/$(buildConfiguration)/'
+    rootFolderOrFile: '$(Build.SourcesDirectory)/MonoGame1/bin/Windows/x86/$(buildConfiguration)/'
     includeRootFolder: false
     archiveType: 'zip'
     archiveFile: '$(Build.ArtifactStagingDirectory)/Windows-$(Build.BuildId).zip'
