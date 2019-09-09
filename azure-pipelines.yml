@@ -11,10 +11,28 @@ pool:
 
 variables:
   solution: '**/*.sln'
-  buildPlatform: 'Any CPU'
+  buildPlatform: 'x86'
   buildConfiguration: 'Release'
+  monoGameVersion: 'v3.7.1'
 
 steps:
+- script: |
+    powershell -Command "(New-Object System.Net.WebClient).DownloadFile('https://github.com/MonoGame/MonoGame/releases/download/$(monoGameVersion)/MonoGameSetup.exe', '.\MonoGameSetup.exe')"
+  displayName: 'Download MonoGame $(monoGameVersion)'
+
+- task: ExtractFiles@1
+  inputs:
+    archiveFilePatterns: 'MonoGameSetup.exe'
+    destinationFolder: './tmp/'
+  displayName: 'Extract MonoGame $(monoGameVersion)'
+
+- script: |
+    mkdir "%PROGRAMFILES(X86)%\MSBuild"
+    xcopy .\tmp\$PROGRAMFILES\MSBuild "%PROGRAMFILES(X86)%\MSBuild" /E /Y
+    mkdir "%PROGRAMFILES(X86)%\MonoGame\v3.0\Assemblies\"
+    xcopy .\tmp\Assemblies "%PROGRAMFILES(X86)%\MonoGame\v3.0\Assemblies" /E /Y
+  displayName: 'Install MonoGame $(monoGameVersion)'
+
 - task: NuGetToolInstaller@1
 
 - task: NuGetCommand@2
@@ -27,7 +45,18 @@ steps:
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
 
-- task: VSTest@2
+- task: ArchiveFiles@2
   inputs:
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
+    rootFolderOrFile: '$(Build.SourcesDirectory)/**/Windows/x86/$(buildConfiguration)/'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/Windows-$(Build.BuildId).zip'
+    replaceExistingArchive: true
+  displayName: 'Archive Windows'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(build.ArtifactStagingDirectory)'
+    ArtifactName: 'MonoGame1'
+    Parallel: true
+  displayName: 'Upload Artifacts'
