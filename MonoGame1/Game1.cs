@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
 
 namespace MonoGame1
 {
@@ -11,6 +12,7 @@ namespace MonoGame1
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
+        Texture2D tile;
 
         public Game1()
         {
@@ -31,6 +33,10 @@ namespace MonoGame1
             base.Initialize();
         }
 
+        Random random = new Random(0);
+        Rectangle destinationRectangle;
+        Vector2 velocity;
+
         /// <summary>
         /// LoadContent will be called once per game and is the place to load
         /// all of your content.
@@ -39,8 +45,24 @@ namespace MonoGame1
         {
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
+            tile = Content.Load<Texture2D>("Tile");
+            destinationRectangle = new Rectangle(
+                0,
+                0,
+                graphics.PreferredBackBufferWidth / 6,
+                graphics.PreferredBackBufferHeight / 6
+            );
+            velocity = Vector2.UnitX * 5;
+            RotateVelocity();
+        }
 
-            // TODO: use this.Content to load your game content here
+        void RotateVelocity()
+        {
+            var radians = MathHelper.TwoPi * (float)random.NextDouble();
+            velocity = Vector2.Transform(
+                velocity, 
+                Matrix.CreateRotationZ(radians)
+            );
         }
 
         /// <summary>
@@ -62,9 +84,33 @@ namespace MonoGame1
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            // TODO: Add your update logic here
+            do
+            {
+                var point = new Vector2(destinationRectangle.X, destinationRectangle.Y);
+                point += velocity;
+
+                destinationRectangle.X = (int)point.X;
+                destinationRectangle.Y = (int)point.Y;
+
+            } while (ShouldRetry());
 
             base.Update(gameTime);
+        }
+
+        bool ShouldRetry()
+        {
+            var frame = new Rectangle(
+                0,
+                0,
+                graphics.PreferredBackBufferWidth,
+                graphics.PreferredBackBufferHeight
+            );
+            if (!frame.Contains(destinationRectangle))
+            {
+                RotateVelocity();
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -75,7 +121,9 @@ namespace MonoGame1
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            // TODO: Add your drawing code here
+            spriteBatch.Begin();
+            spriteBatch.Draw(tile, destinationRectangle, Color.White);
+            spriteBatch.End();
 
             base.Draw(gameTime);
         }
